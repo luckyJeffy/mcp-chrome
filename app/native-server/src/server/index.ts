@@ -49,7 +49,6 @@ export class Server {
     this.fastify.get(
       '/ask-extension',
       async (request: FastifyRequest<{ Body: ExtensionRequestPayload }>, reply: FastifyReply) => {
-
         if (!this.nativeHost) {
           return reply
             .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
@@ -235,7 +234,11 @@ export class Server {
     });
   }
 
-  public async start(port = NATIVE_SERVER_PORT, nativeHost: NativeMessagingHost): Promise<void> {
+  public async start(
+    port = NATIVE_SERVER_PORT,
+    nativeHost: NativeMessagingHost,
+    host?: string,
+  ): Promise<void> {
     if (!this.nativeHost) {
       this.nativeHost = nativeHost; // Ensure nativeHost is set
     } else if (this.nativeHost !== nativeHost) {
@@ -246,9 +249,12 @@ export class Server {
       return;
     }
 
+    const listenHost = host || SERVER_CONFIG.HOST;
+
     try {
-      await this.fastify.listen({ port, host: SERVER_CONFIG.HOST });
+      await this.fastify.listen({ port, host: listenHost });
       this.isRunning = true; // Update running status
+      console.log(`Server started on ${listenHost}:${port}`);
       // No need to return, Promise resolves void by default
     } catch (err) {
       this.isRunning = false; // Startup failed, reset status

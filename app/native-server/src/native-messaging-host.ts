@@ -2,7 +2,7 @@ import { stdin, stdout } from 'process';
 import { Server } from './server';
 import { v4 as uuidv4 } from 'uuid';
 import { NativeMessageType } from 'chrome-mcp-shared';
-import { TIMEOUTS } from './constant';
+import { TIMEOUTS, SERVER_CONFIG } from './constant';
 
 interface PendingRequest {
   resolve: (value: any) => void;
@@ -93,7 +93,7 @@ export class NativeMessagingHost {
     try {
       switch (message.type) {
         case NativeMessageType.START:
-          await this.startServer(message.payload?.port || 3000);
+          await this.startServer(message.payload?.port || 3000, message.payload?.host);
           break;
         case NativeMessageType.STOP:
           await this.stopServer();
@@ -149,7 +149,7 @@ export class NativeMessagingHost {
   /**
    * Start Fastify server (now accepts Server instance)
    */
-  private async startServer(port: number): Promise<void> {
+  private async startServer(port: number, host?: string): Promise<void> {
     if (!this.associatedServer) {
       this.sendError('Internal error: server instance not set');
       return;
@@ -163,13 +163,12 @@ export class NativeMessagingHost {
         return;
       }
 
-      await this.associatedServer.start(port, this);
+      await this.associatedServer.start(port, this, host);
 
       this.sendMessage({
         type: NativeMessageType.SERVER_STARTED,
-        payload: { port },
+        payload: { port, host: host || SERVER_CONFIG.HOST },
       });
-
     } catch (error: any) {
       this.sendError(`Failed to start server: ${error.message}`);
     }
@@ -235,8 +234,6 @@ export class NativeMessagingHost {
       payload: { message: errorMessage },
     });
   }
-
-
 
   /**
    * Clean up resources

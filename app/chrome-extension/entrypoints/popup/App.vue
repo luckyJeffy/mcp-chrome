@@ -751,11 +751,12 @@ const testNativeConnection = async () => {
       await chrome.runtime.sendMessage({ type: 'disconnect_native' });
       nativeConnectionStatus.value = 'disconnected';
     } else {
-      console.log(`尝试连接到端口: ${nativeServerPort.value}`);
+      console.log(`尝试连接到 ${nativeServerHost.value}:${nativeServerPort.value}`);
       // eslint-disable-next-line no-undef
       const response = await chrome.runtime.sendMessage({
         type: 'connectNative',
         port: nativeServerPort.value,
+        host: nativeServerHost.value,
       });
       if (response && response.success) {
         nativeConnectionStatus.value = 'connected';

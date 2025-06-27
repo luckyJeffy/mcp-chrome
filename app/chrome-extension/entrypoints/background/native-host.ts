@@ -73,7 +73,10 @@ function broadcastServerStatusChange(status: ServerStatus): void {
 /**
  * Connect to the native messaging host
  */
-export function connectNativeHost(port: number = NATIVE_HOST.DEFAULT_PORT) {
+export function connectNativeHost(
+  port: number = NATIVE_HOST.DEFAULT_PORT,
+  host: string = NATIVE_HOST.DEFAULT_HOST,
+) {
   if (nativePort) {
     return;
   }
@@ -153,7 +156,7 @@ export function connectNativeHost(port: number = NATIVE_HOST.DEFAULT_PORT) {
       nativePort = null;
     });
 
-    nativePort.postMessage({ type: NativeMessageType.START, payload: { port } });
+    nativePort.postMessage({ type: NativeMessageType.START, payload: { port, host } });
   } catch (error) {
     console.error(ERROR_MESSAGES.NATIVE_CONNECTION_FAILED, error);
   }
@@ -181,8 +184,10 @@ export const initNativeHostListener = () => {
     ) {
       const port =
         typeof message === 'object' && message.port ? message.port : NATIVE_HOST.DEFAULT_PORT;
-      connectNativeHost(port);
-      sendResponse({ success: true, port });
+      const host =
+        typeof message === 'object' && message.host ? message.host : NATIVE_HOST.DEFAULT_HOST;
+      connectNativeHost(port, host);
+      sendResponse({ success: true, port, host });
       return true;
     }
 
