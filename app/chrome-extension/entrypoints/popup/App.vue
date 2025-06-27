@@ -36,6 +36,17 @@
               <pre class="mcp-config-json">{{ mcpConfigJson }}</pre>
             </div>
           </div>
+          <div class="address-section">
+            <label for="address" class="address-label">服务地址</label>
+            <input
+              type="text"
+              id="address"
+              :value="nativeServerHost"
+              @input="updateHost"
+              class="address-input"
+              :placeholder="NATIVE_HOST.DEFAULT_HOST"
+            />
+          </div>
           <div class="port-section">
             <label for="port" class="port-label">连接端口</label>
             <input
@@ -251,6 +262,7 @@ import {
   cleanupModelCache,
 } from '@/utils/semantic-similarity-engine';
 import { BACKGROUND_MESSAGE_TYPES } from '@/common/message-types';
+import { NATIVE_HOST } from '@/common/constants';
 
 import ConfirmDialog from './components/ConfirmDialog.vue';
 import ProgressIndicator from './components/ProgressIndicator.vue';
@@ -267,7 +279,8 @@ import {
 
 const nativeConnectionStatus = ref<'unknown' | 'connected' | 'disconnected'>('unknown');
 const isConnecting = ref(false);
-const nativeServerPort = ref<number>(12306);
+const nativeServerHost = ref<string>(NATIVE_HOST.DEFAULT_HOST);
+const nativeServerPort = ref<number>(NATIVE_HOST.DEFAULT_PORT);
 
 const serverStatus = ref<{
   isRunning: boolean;
@@ -286,11 +299,12 @@ const copyButtonText = ref('复制配置');
 
 const mcpConfigJson = computed(() => {
   const port = serverStatus.value.port || nativeServerPort.value;
+  const host = nativeServerHost.value || NATIVE_HOST.DEFAULT_HOST;
   const config = {
     mcpServers: {
       'streamable-mcp-server': {
         type: 'streamable-http',
-        url: `http://127.0.0.1:${port}/mcp`,
+        url: `http://${host}:${port}/mcp`,
       },
     },
   };
@@ -655,6 +669,14 @@ const updatePort = async (event: Event) => {
   await savePortPreference(newPort);
 };
 
+const updateHost = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const newHost = target.value.trim() || NATIVE_HOST.DEFAULT_HOST;
+  nativeServerHost.value = newHost;
+
+  await saveHostPreference(newHost);
+};
+
 const checkNativeConnection = async () => {
   try {
     // eslint-disable-next-line no-undef
@@ -739,6 +761,7 @@ const testNativeConnection = async () => {
         nativeConnectionStatus.value = 'connected';
         console.log('连接成功:', response);
         await savePortPreference(nativeServerPort.value);
+        await saveHostPreference(nativeServerHost.value);
       } else {
         nativeConnectionStatus.value = 'disconnected';
         console.error('连接失败:', response);
@@ -854,6 +877,16 @@ const savePortPreference = async (port: number) => {
   }
 };
 
+const saveHostPreference = async (host: string) => {
+  try {
+    // eslint-disable-next-line no-undef
+    await chrome.storage.local.set({ nativeServerHost: host });
+    console.log(`服务地址偏好已保存: ${host}`);
+  } catch (error) {
+    console.error('保存服务地址偏好失败:', error);
+  }
+};
+
 const loadPortPreference = async () => {
   try {
     // eslint-disable-next-line no-undef
@@ -864,6 +897,19 @@ const loadPortPreference = async () => {
     }
   } catch (error) {
     console.error('加载端口偏好失败:', error);
+  }
+};
+
+const loadHostPreference = async () => {
+  try {
+    // eslint-disable-next-line no-undef
+    const result = await chrome.storage.local.get(['nativeServerHost']);
+    if (result.nativeServerHost) {
+      nativeServerHost.value = result.nativeServerHost;
+      console.log(`服务地址偏好已加载: ${result.nativeServerHost}`);
+    }
+  } catch (error) {
+    console.error('加载服务地址偏好失败:', error);
   }
 };
 
@@ -1169,6 +1215,7 @@ const setupServerStatusListener = () => {
 };
 
 onMounted(async () => {
+  await loadHostPreference();
   await loadPortPreference();
   await loadModelPreference();
   await checkNativeConnection();
@@ -1679,6 +1726,36 @@ onUnmounted(() => {
   margin: 0;
   white-space: pre;
   overflow-x: auto;
+}
+
+.address-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.address-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.address-input {
+  display: block;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  padding: 12px;
+  font-size: 14px;
+  background: #f8fafc;
+}
+
+.address-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .port-section {
