@@ -19,7 +19,7 @@ export const TIMEOUTS = {
 
 // Server configuration
 export const SERVER_CONFIG = {
-  HOST: '0.0.0.0', // Listen on all interfaces to support WSL scenarios
+  HOST: '0.0.0.0',
   CORS_ORIGIN: true,
   LOGGER_ENABLED: false,
 } as const;
